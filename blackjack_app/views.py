@@ -81,6 +81,9 @@ def place_bet(request):
 
 @login_required
 def deal_cards(request):
+    profile = UserProfile.objects.get(user=request.user)
+    profile.in_game = True
+    profile.save()
     global blackjack_game_instance
     if 'cards_dealt' not in request.session:
         blackjack_game_instance.initial_deal()
@@ -138,6 +141,8 @@ def determine_winner(request):
         profile.games_lost += 1
 
     profile.games_played += 1
+    profile.in_game = False
+
     profile.save()
     
     if profile.money == 0 or profile.money > 1000:
@@ -166,16 +171,13 @@ def reset_game(request):
 def game_over(request):
     profile = UserProfile.objects.get(user=request.user)
     win = False
-    message = ""
     
     if profile.money >= 1000:
-        message = "Congratulations! You've reached $1,000! Please contact support to claim your mysterious prize."
         win = True
         money = profile.money
         profile.money = 100
         profile.save()
     elif profile.money <= 0:
-        message = "You've run out of money. Your account will now be deleted."
         win = False
         user = request.user
         # user.delete()
