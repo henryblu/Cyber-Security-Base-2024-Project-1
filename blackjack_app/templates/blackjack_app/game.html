@@ -22,9 +22,15 @@
     <div>
         {% if winner %}
             <h3>{{ winner }} wins!</h3>
+            <a href="{% url 'reset_game' %}" class="btn btn-success">Start New Game</a>
+            <a href="{% url 'profile' %}" class="btn btn-info">View Profile & Stats</a>
+            <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
         {% else %}
             {% if is_player_bust %}
                 <h3>You busted! Dealer wins!</h3>
+                <a href="{% url 'reset_game' %}" class="btn btn-success">Start New Game</a>
+                <a href="{% url 'profile' %}" class="btn btn-info">View Profile & Stats</a>
+                <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
             {% else %}
                 <a href="{% url 'player_hit' %}" class="btn btn-primary">Hit</a>
                 <a href="{% url 'dealer_turn' %}" class="btn btn-secondary">Stand</a>
