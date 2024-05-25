@@ -1,10 +1,35 @@
 {% extends 'blackjack_app/base.html' %}
 
 {% block content %}
-<div id="game-container">
-    <h1>Blackjack Game</h1>
-    <div id="game-area">
-        <!-- implement the game -->
+<div class="container">
+    <h2>Blackjack Game</h2>
+    <div>
+        <h3>Your Hand ({{ player_value }}):</h3>
+        <ul>
+            {% for card in player_hand %}
+                <li>{{ card.0 }} of {{ card.1 }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div>
+        <h3>Dealer's Hand ({{ dealer_value }}):</h3>
+        <ul>
+            {% for card in dealer_hand %}
+                <li>{{ card.0 }} of {{ card.1 }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div>
+        {% if winner %}
+            <h3>{{ winner }} wins!</h3>
+        {% else %}
+            {% if is_player_bust %}
+                <h3>You busted! Dealer wins!</h3>
+            {% else %}
+                <a href="{% url 'player_hit' %}" class="btn btn-primary">Hit</a>
+                <a href="{% url 'dealer_turn' %}" class="btn btn-secondary">Stand</a>
+            {% endif %}
+        {% endif %}
     </div>
 </div>
 {% endblock %}
