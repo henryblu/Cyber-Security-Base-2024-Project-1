@@ -2,9 +2,20 @@
 
 {% block content %}
 <div class="container">
-    <h1>Welcome to Blackjack Game</h1>
-    <p>Please choose an option below:</p>
-    <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
-    <a href="{% url 'register' %}" class="btn btn-secondary">Register</a>
+    <h1>Welcome to Online Blackjack</h1>
+    <p>Here are the rules of the game:</p>
+    <ul>
+        <li>The goal of blackjack is to beat the dealer's hand without going over 21.</li>
+        <li>Face cards are worth 10. Aces are worth 1 or 11, whichever makes a better hand.</li>
+        <li>Each player starts with two cards, one of the dealer's cards is hidden until the end.</li>
+        <li>To 'Hit' is to ask for another card. To 'Stand' is to hold your total and end your turn.</li>
+        <li>If you go over 21 you bust, and the dealer wins regardless of the dealer's hand.</li>
+        <li>If you are dealt 21 from the start (Ace & 10), you got a blackjack.</li>
+        <li>Blackjack usually means you win 1.5 the amount of your bet.</li>
+    </ul>
+    <p>Start with $100 and try to make it to $1,000 to win a mysterious prize! If you run out of money, your account will be deleted.</p>
+    <h2>Your Current Balance: ${{ request.user.userprofile.money }}</h2>
+    <a href="{% url 'start_game' %}" class="btn btn-primary">Play Game</a>
+    <a href="{% url 'profile' %}" class="btn btn-info">View Profile</a>
 </div>
 {% endblock %}
