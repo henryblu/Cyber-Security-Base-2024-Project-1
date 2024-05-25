@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from .forms import RegisterForm, LoginForm
 from .models import UserProfile
@@ -38,8 +39,18 @@ def login_view(request):
 
 @login_required
 def profile(request):
-    profile = UserProfile.objects.get(user=request.user)
-    return render(request, 'blackjack_app/profile.html', {'profile': profile})
+    try:
+        profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=request.user)
+    
+    context = {
+        'user': request.user,
+        'games_played': profile.games_played,
+        'games_won': profile.games_won,
+        'games_lost': profile.games_lost,
+    }
+    return render(request, 'blackjack_app/profile.html', context)
 
 @login_required
 def game(request):
@@ -66,22 +77,25 @@ def game_view(request):
         context['winner'] = 'Dealer'
     return render(request, 'blackjack_app/game.html', context)
 
-
 @login_required
 def player_hit(request):
     global blackjack_game_instance
     blackjack_game_instance.player_hit()
     if blackjack_game_instance.is_bust(blackjack_game_instance.player_hand):
         return redirect('game')
+    if blackjack_game_instance.calculate_hand_value(blackjack_game_instance.player_hand) == 21:
+        return redirect('dealer_turn')
+    if blackjack_game_instance.calculate_hand_value(blackjack_game_instance.dealer_hand) < 17:
+        return redirect('determine_winner')
     return redirect('game')
-
 
 @login_required
 def dealer_turn(request):
     global blackjack_game_instance
     blackjack_game_instance.dealer_turn()
+    if blackjack_game_instance.is_bust(blackjack_game_instance.dealer_hand) or blackjack_game_instance.calculate_hand_value(blackjack_game_instance.dealer_hand) >= 17:
+        return redirect('determine_winner')
     return redirect('game')
-
 
 @login_required
 def determine_winner(request):
@@ -94,5 +108,24 @@ def determine_winner(request):
         'dealer_value': blackjack_game_instance.calculate_hand_value(blackjack_game_instance.dealer_hand),
         'winner': winner,
     }
+
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    profile.games_played += 1
+    if winner == 'Player':
+        profile.games_won += 1
+    elif winner == 'Dealer':
+        profile.games_lost += 1
+    profile.save()
+
     return render(request, 'blackjack_app/game.html', context)
 
+@login_required
+def reset_game(request):
+    global blackjack_game_instance
+    blackjack_game_instance.reset()
+    return redirect('start_game')
+
+@login_required
+def logout(request):
+    auth_logout(request)
+    return redirect('home')
