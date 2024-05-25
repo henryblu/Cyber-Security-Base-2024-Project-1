@@ -1,10 +1,15 @@
 {% extends 'blackjack_app/base.html' %}
 
 {% block content %}
-<h2>Profile</h2>
-<p>Username: {{ profile.user.username }}</p>
-<p>Email: {{ profile.user.email }}</p>
-<p>Games Played: {{ profile.games_played }}</p>
-<p>Games Won: {{ profile.games_won }}</p>
-<p>Games Lost: {{ profile.games_lost }}</p>
+<div class="container">
+    <h1>User Profile</h1>
+    <p>Username: {{ user.username }}</p>
+    <p>Email: {{ user.email }}</p>
+    <h2>Statistics</h2>
+    <p>Games Played: {{ games_played }}</p>
+    <p>Games Won: {{ games_won }}</p>
+    <p>Games Lost: {{ games_lost }}</p>
+    <a href="{% url 'start_game' %}" class="btn btn-success">Start New Game</go>
+    <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
+</div>
 {% endblock %}
