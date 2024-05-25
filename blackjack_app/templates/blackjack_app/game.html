@@ -1,41 +1,57 @@
 {% extends 'blackjack_app/base.html' %}
 
 {% block content %}
-<div class="container">
-    <h2>Blackjack Game</h2>
-    <div>
-        <h3>Your Hand ({{ player_value }}):</h3>
-        <ul>
-            {% for card in player_hand %}
-                <li>{{ card.0 }} of {{ card.1 }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-    <div>
-        <h3>Dealer's Hand ({{ dealer_value }}):</h3>
-        <ul>
-            {% for card in dealer_hand %}
-                <li>{{ card.0 }} of {{ card.1 }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-    <div>
-        {% if winner %}
-            <h3>{{ winner }} wins!</h3>
-            <a href="{% url 'reset_game' %}" class="btn btn-success">Start New Game</a>
-            <a href="{% url 'profile' %}" class="btn btn-info">View Profile & Stats</a>
-            <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
-        {% else %}
-            {% if is_player_bust %}
-                <h3>You busted! Dealer wins!</h3>
+<form method="post" action="{% url 'place_bet' %}">
+    {% csrf_token %}
+    <div class="container">
+        <h2>Blackjack Game</h2>
+        <div>
+            <h3>Your Hand ({{ player_value }}):</h3>
+            <ul>
+                {% for card in player_hand %}
+                    <li>{{ card.0 }} of {{ card.1 }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div>
+            {% if not winner %}
+            <h3>Dealer's Hand (??):</h3>
+            <ul>
+                <li>{{ dealer_hand.0.0 }} of {{ dealer_hand.0.1 }}</li>
+                <li>Hidden Card</li>
+            </ul>
+            {% else %}
+            <h3>Dealer's Hand ({{ dealer_value }}):</h3>
+            <ul>
+                {% for card in dealer_hand %}
+                    <li>{{ card.0 }} of {{ card.1 }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        <div>
+            {% if blackjack %}
+                <h3>Blackjack! You win!</h3>
+                <a href="{% url 'reset_game' %}" class="btn btn-success">Start New Game</a>
+                <a href="{% url 'profile' %}" class="btn btn-info">View Profile & Stats</a>
+                <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
+            {% elif winner %}
+                <h3>{{ winner }} wins!</h3>
                 <a href="{% url 'reset_game' %}" class="btn btn-success">Start New Game</a>
                 <a href="{% url 'profile' %}" class="btn btn-info">View Profile & Stats</a>
                 <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
             {% else %}
-                <a href="{% url 'player_hit' %}" class="btn btn-primary">Hit</a>
-                <a href="{% url 'dealer_turn' %}" class="btn btn-secondary">Stand</a>
+                {% if is_player_bust %}
+                    <h3>You busted! Dealer wins!</h3>
+                    <a href="{% url 'reset_game' %}" class="btn btn-success">Start New Game</a>
+                    <a href="{% url 'profile' %}" class="btn btn-info">View Profile & Stats</a>
+                    <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
+                {% else %}
+                    <a href="{% url 'player_hit' %}" class="btn btn-primary">Hit</a>
+                    <a href="{% url 'dealer_turn' %}" class="btn btn-secondary">Stand</a>
+                {% endif %}
             {% endif %}
-        {% endif %}
+        </div>
     </div>
-</div>
+</form>
 {% endblock %}
