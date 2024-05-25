@@ -51,8 +51,8 @@ class BlackjackGame:
     def is_bust(self, hand):
         return self.calculate_hand_value(hand) > 21
     
-    def is_blackjack(self, hand):
-        return self.calculate_hand_value(hand) == 21 and len(hand) == 2
+    def is_blackjack(self):
+        return self.calculate_hand_value(self.player_hand) == 21 and len(self.player_hand) == 2
 
     def get_winner(self):
         player_value = self.calculate_hand_value(self.player_hand)
