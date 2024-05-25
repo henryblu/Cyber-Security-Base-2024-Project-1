@@ -1,0 +1,18 @@
+{% extends 'blackjack_app/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Start New Blackjack Game</h2>
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="{% url 'place_bet' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="bet">Enter Your Bet ($5 to ${{ money }}):</label>
+            <input type="number" name="bet" id="bet" class="form-control" min="5" max="{{ money }}" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Place Bet and Start Game</button>
+    </form>
+</div>
+{% endblock %}
