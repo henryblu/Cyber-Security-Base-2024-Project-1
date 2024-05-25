@@ -6,6 +6,7 @@ class UserProfile(models.Model):
     games_played = models.IntegerField(default=0)
     games_won = models.IntegerField(default=0)
     games_lost = models.IntegerField(default=0)
+    in_game = models.BooleanField(default=False)
     money = models.IntegerField(default=100)  # Start with $100
 
     def __str__(self):
