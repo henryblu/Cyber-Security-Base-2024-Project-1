@@ -1,0 +1,10 @@
+{% extends 'blackjack_app/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Welcome to Blackjack Game</h1>
+    <p>Please choose an option below:</p>
+    <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+    <a href="{% url 'register' %}" class="btn btn-secondary">Register</a>
+</div>
+{% endblock %}
