@@ -1,0 +1,23 @@
+{% extends 'blackjack_app/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Game Over</h1>
+    {% if win %}
+    <div class="alert alert-success">
+        <p>Thank you for playing! To claim your prize, please contact support.</p>
+        <p>Your balance has been reset to $100. <a href="{% url 'start_game' %}" class="btn btn-info">Play Again</a></p>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <p>Your account has been deleted due to insufficient funds.</p>
+    </div>
+    {% endif %}
+    <h3>Your Final Stats:</h3>
+    <p>Games Played: {{ games_played }}</p>
+    <p>Games Won: {{ games_won }}</p>
+    <p>Games Lost: {{ games_lost }}</p>
+    <p>Final Balance: ${{ money }}</p>
+    <a href="{% url 'welcome' %}" class="btn btn-primary">Back to Home</a>
+</div>
+{% endblock %}
