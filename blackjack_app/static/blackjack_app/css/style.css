@@ -1,0 +1,9 @@
+#game-container {
+    text-align: center;
+}
+
+#game-area {
+    margin: 20px;
+    padding: 10px;
+    border: 1px solid #000;
+}
