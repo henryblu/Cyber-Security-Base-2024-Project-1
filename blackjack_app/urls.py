@@ -11,4 +11,6 @@ urlpatterns = [
     path('hit/', views.player_hit, name='player_hit'),
     path('dealer/', views.dealer_turn, name='dealer_turn'),
     path('winner/', views.determine_winner, name='determine_winner'),
+    path('reset/', views.reset_game, name='reset_game'),
+    path('logout/', views.logout, name='logout'),
 ]
