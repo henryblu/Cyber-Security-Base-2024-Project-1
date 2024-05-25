@@ -64,3 +64,8 @@ class BlackjackGame:
             return 'Dealer'
         else:
             return 'Draw'
+
+    def reset(self):
+        self.deck = self.create_deck()
+        self.player_hand = []
+        self.dealer_hand = []
