@@ -57,6 +57,9 @@ def profile(request):
 @login_required
 def start_game(request):
     global blackjack_game_instance
+    profile = UserProfile.objects.get(user=request.user)
+    profile.in_game = True
+    profile.save()
     blackjack_game_instance = BlackjackGame()
     request.session.pop('current_bet', None)
     request.session.pop('cards_dealt', None)
@@ -81,9 +84,6 @@ def place_bet(request):
 
 @login_required
 def deal_cards(request):
-    profile = UserProfile.objects.get(user=request.user)
-    profile.in_game = True
-    profile.save()
     global blackjack_game_instance
     if 'cards_dealt' not in request.session:
         blackjack_game_instance.initial_deal()
