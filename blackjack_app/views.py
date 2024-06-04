@@ -3,26 +3,44 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db import connection
+from django.http import HttpResponse
+from django.contrib.auth.models import User  # Ensure User is imported correctly
 from .forms import RegisterForm, LoginForm
 from .models import UserProfile
 from .blackjack_game.blackjack_game import BlackjackGame
+import logging
 
 # Initialize a global game object for simplicity
 blackjack_game_instance = BlackjackGame()
 
+# Vulnerability #6: No Security Logging
+# fix: To implement a security logger that tracks failed login attempts, we can use Django's logging framework.
+# logger = logging.getLogger('security')
+
+
 def welcome(request):
+    if request.user.is_authenticated:
+        return redirect('home')
     return render(request, 'blackjack_app/welcome.html')
 
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            UserProfile.objects.create(user=user)
+            # Vulnerability #4 - Weak Passwords
+            user = User.objects.create_user(
+                username=form.cleaned_data['username'],
+                email=form.cleaned_data['email'],
+                password=form.cleaned_data['password1']
+            )
+            # Fix (with form fix in forms.py): 
+            # user = form.save()
+
             return redirect('login')
     else:
         form = RegisterForm()
     return render(request, 'blackjack_app/register.html', {'form': form})
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -34,6 +52,11 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 return redirect('home')
+            # Vulnerability #6: No Security Logging
+            # fix: Log the failed login attempt
+            # else:
+            #     logger.warning(f"Failed login attempt for username: {username}")
+
     else:
         form = LoginForm()
     return render(request, 'blackjack_app/login.html', {'form': form})
@@ -49,7 +72,7 @@ def profile(request):
     profile = get_object_or_404(UserProfile, id=profile_id)
     # Fix: profile = UserProfile.objects.get(user=request.user)
     context = {
-        'user': request.user,
+        'user': profile.user,
         'games_played': profile.games_played,
         'games_won': profile.games_won,
         'games_lost': profile.games_lost,
@@ -61,6 +84,10 @@ def profile(request):
 def start_game(request):
     global blackjack_game_instance
     profile = UserProfile.objects.get(user=request.user)
+    
+    # Vulnerability #3: Insecure Design (No validation for game state)
+    # fix: if profile.in_game:
+    #     return redirect('game')
     profile.in_game = True
     profile.save()
     blackjack_game_instance = BlackjackGame()
@@ -70,6 +97,10 @@ def start_game(request):
 
 @login_required
 def place_bet(request):
+    # Vulnerability #3: Insecure Design (No validation for game state)
+    if 'current_bet' in request.session:
+        return redirect('game')
+
     profile = UserProfile.objects.get(user=request.user)
     if request.method == 'POST':
         bet = int(request.POST.get('bet', 0))
@@ -78,8 +109,9 @@ def place_bet(request):
             # Vulnerability #2: Direct SQL update (susceptible to SQL injection)
             with connection.cursor() as cursor:
                 cursor.execute("UPDATE blackjack_app_userprofile SET money = %s WHERE id = %s", [new_money, profile.id])
-            # Fix: profile.money = new_money
-            #      profile.save()
+            # Fix: use Django's ORM to update the model
+            # profile.money = new_money
+            # profile.save()
             request.session['current_bet'] = bet
             return redirect('deal_cards')
         else:
@@ -101,6 +133,11 @@ def deal_cards(request):
 @login_required
 def game(request):
     profile = UserProfile.objects.get(user=request.user)
+    # Vulnerability #3: Insecure Design (No validation for game state)
+    # fix:
+    # if not profile.in_game:
+    #     return redirect('home') 
+    
     context = {
         'player_hand': blackjack_game_instance.player_hand,
         'dealer_hand': blackjack_game_instance.dealer_hand,
@@ -110,6 +147,7 @@ def game(request):
         'current_bet': request.session.get('current_bet', 0),
         'winner': None
     }
+
     if blackjack_game_instance.is_blackjack():
         return redirect('determine_winner')
     if blackjack_game_instance.is_bust(blackjack_game_instance.player_hand):
@@ -135,8 +173,12 @@ def determine_winner(request):
     blackjack = False
     profile = UserProfile.objects.get(user=request.user)
     current_bet = request.session.get('current_bet', 0)
+    
+    # Vulnerability #3: Insecure Design (No validation for game state)
+    # fix:
+    # if not profile.in_game:
+    #    return redirect('home')
 
-    # check for blackjack
     new_money = profile.money
     if blackjack_game_instance.is_blackjack():
         blackjack = True
@@ -150,6 +192,7 @@ def determine_winner(request):
     profile.games_lost += 1 if winner == 'Dealer' else 0
     profile.games_played += 1
     profile.in_game = False
+    profile.save()
 
     # Vulnerability #2: Direct SQL update (susceptible to SQL injection)
     with connection.cursor() as cursor:
@@ -157,10 +200,8 @@ def determine_winner(request):
     # Fix: profile.money = new_money
     #      profile.save()
 
-    if new_money == 0 or new_money > 1000:
-        # vulnerability #1: Using user input to fetch profile
-        return redirect(f'place_bet/?profile_id={profile.id}')
-        # Fix: return redirect('place_bet')
+    if new_money == 0 or new_money >= 1000:
+        return redirect('game_over')
     
     context = {
         'player_hand': blackjack_game_instance.player_hand,
@@ -177,16 +218,23 @@ def determine_winner(request):
 
 @login_required
 def reset_game(request):
+    # Vulnerability #3: Insecure Design (No validation for game state)
+    # fix:
+    # if profile.in_game:
+    #     return redirect('game')
     global blackjack_game_instance
     blackjack_game_instance.reset()
     return redirect('start_game')
 
 @login_required
 def game_over(request):
-    # Vulnerability #1: Using user input to fetch profile
-    profile_id = request.GET.get('profile_id')
-    profile = get_object_or_404(UserProfile, id=profile_id)
-    # Fix: profile = UserProfile.objects.get(user=request.user)
+    profile = UserProfile.objects.get(user=request.user)
+
+    # Vulnerability #3: Insecure Design (No validation for game state)
+    # fix:
+    # if not profile.in_game:
+    #     return redirect('home')
+
     win = False
     
     if profile.money >= 1000:
