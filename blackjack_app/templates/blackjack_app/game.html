@@ -2,9 +2,13 @@
 
 {% block content %}
 <form method="post" action="{% url 'place_bet' %}">
-    {% csrf_token %}
+    <!-- Vulnerability #5: Cross-Site Request Forgery (CSRF) -->
+    <!-- Fix: Add CSRF token -->
+    <!-- {% csrf_token %} -->
     <div class="container">
         <h2>Blackjack Game</h2>
+        <h3>Your Current Balance: ${{ request.user.userprofile.money }}</h3>
+        <h3>Your Current Bet: ${{ current_bet }}</h3>
         <div>
             <h3>Your Hand ({{ player_value }}):</h3>
             <ul>
