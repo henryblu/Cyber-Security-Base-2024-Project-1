@@ -18,12 +18,17 @@ blackjack_game_instance = BlackjackGame()
 # fix: To implement a security logger that tracks failed login attempts, we can use Django's logging framework.
 # logger = logging.getLogger('security')
 
-
+# Vulnerability #5: Cross-Site Request Forgery (CSRF) -->
+@csrf_exempt
+# fix: Delete csrf exemption to use Django's CSRF token to protect against CSRF attacks
 def welcome(request):
     if request.user.is_authenticated:
         return redirect('home')
     return render(request, 'blackjack_app/welcome.html')
 
+# Vulnerability #5: Cross-Site Request Forgery (CSRF) -->
+@csrf_exempt
+# fix: Delete csrf exemption to use Django's CSRF token to protect against CSRF attacks
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
