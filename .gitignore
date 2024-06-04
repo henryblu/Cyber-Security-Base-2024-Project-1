@@ -27,8 +27,6 @@ build/
 *.pyo
 *.pyd
 *.sql
-*.sqlite3
-db.sqlite3
 
 # If your build process includes running collectstatic, you might want to include these directories
 /staticfiles/
