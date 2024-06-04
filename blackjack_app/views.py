@@ -1,7 +1,8 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.db import connection
 from .forms import RegisterForm, LoginForm
 from .models import UserProfile
 from .blackjack_game.blackjack_game import BlackjackGame
@@ -23,7 +24,6 @@ def register(request):
         form = RegisterForm()
     return render(request, 'blackjack_app/register.html', {'form': form})
 
-
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -44,7 +44,10 @@ def home(request):
 
 @login_required
 def profile(request):
-    profile = UserProfile.objects.get_or_create(user=request.user)[0]
+    # Vulnerability #1: Using user input to fetch profile
+    profile_id = request.GET.get('profile_id')
+    profile = get_object_or_404(UserProfile, id=profile_id)
+    # Fix: profile = UserProfile.objects.get(user=request.user)
     context = {
         'user': request.user,
         'games_played': profile.games_played,
@@ -71,8 +74,12 @@ def place_bet(request):
     if request.method == 'POST':
         bet = int(request.POST.get('bet', 0))
         if bet > 0 and bet <= profile.money:
-            profile.money -= bet
-            profile.save()
+            new_money = int(profile.money) - bet
+            # Vulnerability #2: Direct SQL update (susceptible to SQL injection)
+            with connection.cursor() as cursor:
+                cursor.execute("UPDATE blackjack_app_userprofile SET money = %s WHERE id = %s", [new_money, profile.id])
+            # Fix: profile.money = new_money
+            #      profile.save()
             request.session['current_bet'] = bet
             return redirect('deal_cards')
         else:
@@ -130,30 +137,37 @@ def determine_winner(request):
     current_bet = request.session.get('current_bet', 0)
 
     # check for blackjack
+    new_money = profile.money
     if blackjack_game_instance.is_blackjack():
         blackjack = True
-        profile.money += current_bet * 2.5
-        profile.games_won += 1
+        new_money += current_bet * 2.5
     elif winner == 'Player':
-        profile.money += current_bet * 2
-        profile.games_won += 1
+        new_money += current_bet * 2
     elif winner == 'Dealer':
-        profile.games_lost += 1
+        new_money = new_money
 
+    profile.games_won += 1 if winner == 'Player' or blackjack else 0
+    profile.games_lost += 1 if winner == 'Dealer' else 0
     profile.games_played += 1
     profile.in_game = False
 
-    profile.save()
-    
-    if profile.money == 0 or profile.money > 1000:
-        return redirect('game_over')
+    # Vulnerability #2: Direct SQL update (susceptible to SQL injection)
+    with connection.cursor() as cursor:
+        cursor.execute("UPDATE blackjack_app_userprofile SET money = %s WHERE id = %s", [new_money, profile.id])
+    # Fix: profile.money = new_money
+    #      profile.save()
+
+    if new_money == 0 or new_money > 1000:
+        # vulnerability #1: Using user input to fetch profile
+        return redirect(f'place_bet/?profile_id={profile.id}')
+        # Fix: return redirect('place_bet')
     
     context = {
         'player_hand': blackjack_game_instance.player_hand,
         'dealer_hand': blackjack_game_instance.dealer_hand,
         'player_value': blackjack_game_instance.calculate_hand_value(blackjack_game_instance.player_hand),
         'dealer_value': blackjack_game_instance.calculate_hand_value(blackjack_game_instance.dealer_hand),
-        'money': profile.money,
+        'money': new_money,
         'winner': winner,
         'blackjack': blackjack,
         'current_bet': current_bet
@@ -169,7 +183,10 @@ def reset_game(request):
 
 @login_required
 def game_over(request):
-    profile = UserProfile.objects.get(user=request.user)
+    # Vulnerability #1: Using user input to fetch profile
+    profile_id = request.GET.get('profile_id')
+    profile = get_object_or_404(UserProfile, id=profile_id)
+    # Fix: profile = UserProfile.objects.get(user=request.user)
     win = False
     
     if profile.money >= 1000:
@@ -177,14 +194,11 @@ def game_over(request):
         money = profile.money
         profile.money = 100
         profile.save()
-    elif profile.money <= 0:
-        win = False
+    else:
         user = request.user
         # user.delete()
         auth_logout(request)
         return render(request, 'blackjack_app/game_over.html', {'win': win})
-    else:
-        return redirect('home')
 
     context = {
         'user': request.user,
