@@ -28,7 +28,9 @@
                         <a class="nav-link {% if in_game %}disabled-link{% endif %}" href="{% if not in_game %}{% url 'home' %}{% endif %}" title="{% if in_game %}Disabled during game{% endif %}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if in_game %}disabled-link{% endif %}" href="{% if not in_game %}{% url 'profile' %}{% endif %}" title="{% if in_game %}Disabled during game{% endif %}">View Profile & Stats</a>
+                        <!--Vulnerability #1: Using user input to fetch profile-->
+                        <a class="nav-link {% if in_game %}disabled-link{% endif %}" href="{% if not in_game %}{% url 'profile' %}?profile_id={{ profile_id }}{% endif %}" title="{% if in_game %}Disabled during game{% endif %}">View Profile & Stats</a>
+                        <!--Fix: href="{% if not in_game %}{% url 'profile' %}{% endif %}" -->
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {% if in_game %}disabled-link{% endif %}" href="{% if not in_game %}{% url 'logout' %}{% endif %}" title="{% if in_game %}Disabled during game{% endif %}">Logout</a>
