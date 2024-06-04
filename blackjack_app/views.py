@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.db import connection
 from django.http import HttpResponse
 from django.contrib.auth.models import User  # Ensure User is imported correctly
@@ -41,7 +42,9 @@ def register(request):
         form = RegisterForm()
     return render(request, 'blackjack_app/register.html', {'form': form})
 
-
+# Vulnerability #5: Cross-Site Request Forgery (CSRF) -->
+@csrf_exempt
+# fix: Delete csrf exemption to use Django's CSRF token to protect against CSRF attacks
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
@@ -80,6 +83,9 @@ def profile(request):
     }
     return render(request, 'blackjack_app/profile.html', context)
 
+# Vulnerability #5: Cross-Site Request Forgery (CSRF) -->
+@csrf_exempt
+# fix: Delete csrf exemption to use Django's CSRF token to protect against CSRF attacks
 @login_required
 def start_game(request):
     global blackjack_game_instance
@@ -95,18 +101,22 @@ def start_game(request):
     request.session.pop('cards_dealt', None)
     return redirect('place_bet')
 
+# Vulnerability #5: Cross-Site Request Forgery (CSRF) -->
+@csrf_exempt
+# fix: Delete csrf exemption to use Django's CSRF token to protect against CSRF attacks
 @login_required
 def place_bet(request):
     # Vulnerability #3: Insecure Design (No validation for game state)
-    if 'current_bet' in request.session:
-        return redirect('game')
+    # fix:
+    # if 'current_bet' in request.session:
+    #     return redirect('game')
 
     profile = UserProfile.objects.get(user=request.user)
     if request.method == 'POST':
         bet = int(request.POST.get('bet', 0))
         if bet > 0 and bet <= profile.money:
             new_money = int(profile.money) - bet
-            # Vulnerability #2: Direct SQL update (susceptible to SQL injection)
+            # Vulnerability #2: injection 
             with connection.cursor() as cursor:
                 cursor.execute("UPDATE blackjack_app_userprofile SET money = %s WHERE id = %s", [new_money, profile.id])
             # Fix: use Django's ORM to update the model
@@ -121,6 +131,7 @@ def place_bet(request):
             })
     return render(request, 'blackjack_app/place_bet.html', {'money': profile.money})
 
+
 @login_required
 def deal_cards(request):
     global blackjack_game_instance
@@ -130,6 +141,9 @@ def deal_cards(request):
     
     return redirect('game')
 
+# Vulnerability #5: Cross-Site Request Forgery (CSRF) -->
+@csrf_exempt
+# fix: Delete csrf exemption to use Django's CSRF token to protect against CSRF attacks
 @login_required
 def game(request):
     profile = UserProfile.objects.get(user=request.user)
@@ -244,7 +258,7 @@ def game_over(request):
         profile.save()
     else:
         user = request.user
-        # user.delete()
+        user.delete()
         auth_logout(request)
         return render(request, 'blackjack_app/game_over.html', {'win': win})
 
